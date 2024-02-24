@@ -30,11 +30,22 @@ mongoose.connect('mongodb+srv://akshayghugare0:root@cluster0.rwu4clq.mongodb.net
   .catch(err => console.log(err));
 
 
-const userSchema = new mongoose.Schema({
-  name: String,
-  mobileNumber: String,
-  profilePic: String, // Stores the path to the image
-});
+  const userSchema = new mongoose.Schema({
+    name: String,
+    mobileNumber: String,
+    isLogin: {
+      type: Boolean,
+      default: false,
+    },
+    profilePic: {
+      type:String,
+      default:''
+    }, // Stores the path to the image
+    timestamp: {
+      type: Date,
+      default: Date.now,
+    },
+  });
 
 const User = mongoose.model('User', userSchema);
 
@@ -83,37 +94,59 @@ app.post('/login', async (req, res) => {
     }
   });
 
+  app.post('/signup', async (req, res) => {
+    try {
+      const { name, mobileNumber } = req.body;
+      const newUser = new User({
+        name,
+        mobileNumber,
+      })
+  await newUser.save();
+  res.status(201).json({ message: 'User added successfully', user: newUser });
+    } catch (error) {
+      // Handle any errors during the process
+      res.status(500).json({ message: 'Error during login', error });
+    }
+  });
 
-  
+  app.post('/addUser', async (req, res) => {
+    try {
+      const { name, mobileNumber } = req.body;
+      const newUser = new User({
+        name,
+        mobileNumber,
+      })
+  await newUser.save();
+  res.status(201).json({ message: 'User added successfully', user: newUser });
+    } catch (error) {
+      // Handle any errors during the process
+      res.status(500).json({ message: 'Error during login', error });
+    }
+  });
 
-// API endpoint to add a user
-app.post('/addUser', upload.single('profilePic'), async (req, res) => {
+
+
+app.patch('/updateProfilePic/:userId', upload.single('profilePic'), async (req, res) => {
   try {
-    const { name, mobileNumber } = req.body;
-    const file = req.file; // Assuming file is optional
-    if(file && file?.originalname){
-  
+    const { userId } = req.params;
     
+
+    if (req.file) {
+      const file = req.file;
       const objectName = `profilepic/${file.originalname}`;
       const uploadResult = await fileUpload(objectName, file.path);
+      let profilePic;
       if (uploadResult) {
-        const newUser = new User({
-          name,
-          mobileNumber,
-          profilePic:uploadResult
-        })
-        
-    await newUser.save();
-    res.status(201).json({ message: 'User added successfully', user: newUser });
-      }else{
-        res.status(400).json({ message: 'Something went wrong', user: null });
+        profilePic = uploadResult;
       }
-      }else{
-        res.status(400).json({ message: 'Something went wrong', user: null });
-      }
-
+      const updatedUser = await User.findByIdAndUpdate(userId, profilePic, { new: true });
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json({ message: 'Profile updated successfully', user: updatedUser });
+    }
   } catch (error) {
-    res.status(500).json({ message: 'Error adding user', error });
+    res.status(500).json({ message: 'Error updating profile', error });
   }
 });
 
