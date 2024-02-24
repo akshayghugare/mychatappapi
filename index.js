@@ -77,13 +77,40 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.post('/login', async (req, res) => {
     try {
       const { name, mobileNumber } = req.body;
-  
-      // Attempt to find a user with the given name and mobile number
-      const user = await User.findOne({ name, mobileNumber });
+      const user = await User.findOneAndUpdate(
+        {name, mobileNumber }, 
+        { $set: { isLogin: true } }, 
+        { new: true } 
+      );
   
       if (user) {
         // If a user is found, login is successful
         res.status(200).json({ message: 'Login successful', user });
+      } else {
+        // If no user is found, login fails
+        res.status(404).json({ message: 'User not found' });
+      }
+    } catch (error) {
+      // Handle any errors during the process
+      res.status(500).json({ message: 'Error during login', error });
+    }
+  });
+ 
+  app.post('/logout', async (req, res) => {
+    try {
+      const { name, mobileNumber } = req.body;
+  
+      // Attempt to find a user with the given name and mobile number
+      // const user = await User.findOne({ name, mobileNumber });
+      const user = await User.findOneAndUpdate(
+        {name, mobileNumber }, // condition to find the user by mobile number
+        { $set: { isLogin: false } }, // update operation to set isLogin to true
+        { new: true } // options to return the updated document
+      );
+  
+      if (user) {
+        // If a user is found, login is successful
+        res.status(200).json({ message: 'Logout successful', user });
       } else {
         // If no user is found, login fails
         res.status(404).json({ message: 'User not found' });
@@ -126,7 +153,7 @@ app.post('/login', async (req, res) => {
 
 
 
-app.patch('/updateProfilePic/:userId', upload.single('profilePic'), async (req, res) => {
+app.post('/updateProfilePic/:userId', upload.single('profilePic'), async (req, res) => {
   try {
     const { userId } = req.params;
     
