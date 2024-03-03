@@ -41,6 +41,11 @@ mongoose.connect('mongodb+srv://akshayghugare0:root@cluster0.rwu4clq.mongodb.net
       type:String,
       default:''
     }, // Stores the path to the image
+    thisUserAddedFrom: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User', // Assuming the reference is to another user; change 'User' to the correct model name as necessary
+      default: null, // You might want to set this to null or not include it if you don't want a default value
+    },
     timestamp: {
       type: Date,
       default: Date.now,
@@ -138,10 +143,11 @@ app.post('/login', async (req, res) => {
 
   app.post('/addUser', async (req, res) => {
     try {
-      const { name, mobileNumber } = req.body;
+      const { name, mobileNumber , thisUserAddedFrom } = req.body;
       const newUser = new User({
         name,
         mobileNumber,
+        thisUserAddedFrom
       })
   await newUser.save();
   res.status(201).json({ message: 'User added successfully', user: newUser });
@@ -203,32 +209,30 @@ app.get('/getMessages/:userId/:contactId', async (req, res) => {
   }
 });
 
-// Socket.IO for real-time communication
+const userSockets = {};
+
 io.on('connection', (socket) => {
   console.log('New client connected');
 
-  socket.on('sendMessage', async ({ message, to, sender }) => {
-    if (!message.trim() || !to || !sender) {
-      console.error('Invalid message data:', { message, to, sender });
-      return;
-    }
+  socket.on('joinChat', ({ userId, contactId }) => {
+      const roomId = [userId, contactId].sort().join("_");
+      socket.join(roomId);
+  });
 
-    try {
+  socket.on('sendMessage', async ({ message, to, sender }) => {
+      const roomId = [sender, to].sort().join("_");
       const newMessage = new Message({ sender, receiver: to, message });
       await newMessage.save();
 
-      socket.join([to, sender]); // Join both sender and receiver to their rooms
-      io.to(to).emit('message', newMessage);
-      io.to(sender).emit('message', newMessage);
-    } catch (error) {
-      console.error('Error sending message:', error);
-    }
+      // Emit to users in the same room
+      io.to(roomId).emit('message', newMessage);
   });
 
   socket.on('disconnect', () => {
-    console.log('Client disconnected');
+      console.log('Client disconnected');
   });
 });
+
 app.get('/test', (req, res) => {
   res.send("Hello from API");
 });
