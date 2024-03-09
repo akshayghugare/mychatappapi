@@ -157,31 +157,47 @@ app.post('/login', async (req, res) => {
     }
   });
 
-
-
-app.post('/updateProfilePic/:userId', upload.single('profilePic'), async (req, res) => {
-  try {
-    const { userId } = req.params;
-    
-
-    if (req.file) {
-      const file = req.file;
-      const objectName = `profilepic/${file.originalname}`;
-      const uploadResult = await fileUpload(objectName, file.path);
-      let profilePic;
-      if (uploadResult) {
-        profilePic = uploadResult;
+  app.post('/delete-user/:userId', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      console.log("eeee",userId)
+      if (userId) {
+        const deletedUser = await User.findByIdAndDelete(userId, { new: true });
+        
+        if (!deletedUser) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+        
+        res.status(200).json({ message: 'User deleted successfully', user: deletedUser });
+      } else {
+        res.status(400).json({ message: 'No file uploaded' });
       }
-      const updatedUser = await User.findByIdAndUpdate(userId, profilePic, { new: true });
-    if (!updatedUser) {
-      return res.status(404).json({ message: 'User not found' });
+    } catch (error) {
+      res.status(500).json({ message: 'Error deleting user', error: error.message });
     }
-    res.status(200).json({ message: 'Profile updated successfully', user: updatedUser });
+  });
+
+  app.post('/updateProfilePic/:userId', upload.single('profilePic'), async (req, res) => {
+    try {
+      const { userId } = req.params;
+  
+      if (req.file) {
+        const profilePicPath = req.file.path;
+         console.log("profilePicPath:::",profilePicPath)
+        const updatedUser = await User.findByIdAndUpdate(userId, { profilePic: profilePicPath }, { new: true });
+        
+        if (!updatedUser) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+        
+        res.status(200).json({ message: 'Profile picture updated successfully', user: updatedUser });
+      } else {
+        res.status(400).json({ message: 'No file uploaded' });
+      }
+    } catch (error) {
+      res.status(500).json({ message: 'Error updating profile', error: error.message });
     }
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating profile', error });
-  }
-});
+  });
 
 // Fetch all users
 app.get('/getAllUsers', async (req, res) => {
@@ -228,10 +244,24 @@ io.on('connection', (socket) => {
       io.to(roomId).emit('message', newMessage);
   });
 
+  socket.emit('myId', socket.id);
+
+  socket.on('callUser', ({ userToCall, signalData, from, name }) => {
+    io.to(userToCall).emit('callReceived', { signal: signalData, from, name });
+    console.log('callReceived:', from, name);
+  });
+
+  socket.on('acceptCall', (data) => {
+    io.to(data.to).emit('callAccepted', data.signal);
+    console.log('callAccepted:', data);
+  });
+
   socket.on('disconnect', () => {
       console.log('Client disconnected');
   });
 });
+
+
 
 app.get('/test', (req, res) => {
   res.send("Hello from API");
