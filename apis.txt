@@ -1,0 +1,96 @@
+'''
+Below are the APIs for user sign-up, login, reset password and forgot password
+Working flow is as under:
+
+Sign-up
+/users/sign-up -> /users/verify-email
+sign up
+{
+    "first_name": "S",
+    "last_name": "K",
+    "username": "test2",
+    "password": "password",
+    "email": "miboga4364@hisotyr.com"
+}
+verify-email
+{
+    "email": "miboga4364@hisotyr.com",
+    "verification_code": "5007"
+}
+
+
+Login
+/users/sign-in
+{
+    "username": "user3",
+    "password": "test@pass"
+}
+
+
+Reset password
+/users/reset-password
+{
+    "username": "test",
+    "old_password": "password",
+    "new_password": "test@pass"
+}
+
+
+Forgot password
+/users/forgot-password -> /users/set-password
+forgot-password
+{
+    "email": "miboga4364@hisotyr.com"
+}
+set-password
+{
+    "email": "miboga4364@hisotyr.com",
+    "new_password": "test@pass",
+    "verification_code": "7059
+}
+
+
+Input from onboarding form to create user interests
+/users/user_id/update-interests
+{
+    "topic_names": ["Art", "Music", "Sports", "Health", "Science"]
+}
+'''
+
+
+'''
+Post creation, fetch and search posts using keywords
+
+/create-posts
+{
+    "username": "file_struct",
+    "text_content": "Create post test in file structure",
+    "image_url": "google.com",
+    "link_url": ""
+}
+
+/search-posts, methods=['GET]
+{
+    "keyword": "flask"
+}
+
+/get-posts, methods=['GET']
+--no body
+'''
+
+
+'''
+To create pages and get recommended pages for a user
+
+Creation
+user/user_id/pages
+{
+    "title": "Food",
+    "content": "Westin Hotel has delicious food",
+    "topic_names": ["Health"]
+}
+
+recommended pages
+/users/user_id/recommendations, methods=['GET']
+--no body
+'''
